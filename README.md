@@ -1,20 +1,20 @@
 # OpenTerm
 
-Веб-клиент SSH/SFTP с локальным хранением секретов.
+SSH/SFTP web client with local secret storage.
 
-## Принцип безопасности
+## Security Principle
 
-- Пароли и приватные ключи **не хранятся на сервере**.
-- На устройстве они лежат в зашифрованном vault (`localStorage`) под мастер-паролем (AES-256-GCM, PBKDF2).
-- Backend принимает креденциалы только в памяти живой WebSocket-сессии и сразу забывает их после закрытия.
-- Синхронизация между устройствами — через **зашифрованный файл** или **QR** (с чанками для больших vault).
+- Passwords and private keys are not stored on the server.
+- On the device, they are stored in an encrypted vault (`localStorage`) under a master password (AES-256-GCM, PBKDF2).
+- The backend only accepts credentials in the memory of a live WebSocket session and immediately forgets them after closing.
+- Synchronization between devices is via an **encrypted file** or **QR** (with chunks for large vaults).
 
-## Стек
+## Stack
 
 - Client: React + Vite + xterm.js
 - Server: Node.js + Express + `ws` + `ssh2`
 
-## Запуск
+## Launch
 
 ```bash
 npm install
@@ -31,13 +31,13 @@ npm run build
 CLIENT_ORIGIN=https://your-domain npm start
 ```
 
-Сервер раздаёт API/`/ws/*`. Статику клиента можно отдавать любым reverse proxy (или подключить `express.static` на `client/dist`).
+The server serves API/`/ws/*`. Client statics can be served via any reverse proxy (or connect `express.static` to `client/dist`).
 
-## Синхронизация
+## Synchronization
 
-1. **Файл** — «Синхронизация» → скачать JSON. На другом устройстве: импорт файла + мастер-пароль.
-2. **QR** — экспорт показывает один или несколько QR-чанков. На втором устройстве: «Импорт QR» и сканирование.
+1. **File** — "Synchronization" → download JSON. On another device: import file + master password.
+2. **QR** — the export shows one or more QR chunks. On the second device: "Import QR" and scan.
 
-## Важно
+## Important
 
-OpenTerm-сервер — это **SSH/SFTP relay**. Разворачивайте его на доверенной машине (лучше self-hosted) и используйте HTTPS/WSS.
+OpenTerm server is an **SSH/SFTP relay**. Deploy it on a trusted machine (preferably self-hosted) and use HTTPS/WSS.
