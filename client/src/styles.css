@@ -145,6 +145,7 @@ button {
   display: grid;
   grid-template-columns: 300px 1fr;
   min-height: 0;
+  height: calc(100vh - 73px);
 }
 
 .sidebar {
@@ -154,7 +155,8 @@ button {
   flex-direction: column;
   gap: 0.85rem;
   background: rgba(8, 14, 12, 0.35);
-  min-height: calc(100vh - 72px);
+  min-height: 0;
+  overflow: auto;
 }
 
 .sidebar h2 {
@@ -205,8 +207,10 @@ button {
 .main {
   min-width: 0;
   min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .panel {
@@ -330,9 +334,11 @@ textarea {
 
 .terminal-wrap {
   flex: 1;
-  min-height: 420px;
+  min-height: 280px;
+  height: 100%;
   padding: 0.5rem;
   background: #07100e;
+  overflow: hidden;
 }
 
 .terminal-wrap .xterm {

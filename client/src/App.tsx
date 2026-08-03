@@ -185,7 +185,7 @@ export default function App() {
           )}
 
           {view.kind === "session" && selected && (
-            <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%", flex: 1, overflow: "hidden" }}>
               <div className="session-bar">
                 <div className="tabs">
                   <button

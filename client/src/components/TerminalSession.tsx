@@ -10,19 +10,31 @@ type Props = {
   server: ServerProfile;
 };
 
+function safeFit(fit: FitAddon, el: HTMLElement | null) {
+  if (!el) return;
+  const { width, height } = el.getBoundingClientRect();
+  if (width < 20 || height < 20) return;
+  try {
+    fit.fit();
+  } catch {
+    /* xterm can throw during teardown */
+  }
+}
+
 export function TerminalSession({ server }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const termRef = useRef<Terminal | null>(null);
-  const fitRef = useRef<FitAddon | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<"connecting" | "live" | "error" | "closed">("connecting");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hostRef.current) return;
+    const host = hostRef.current;
+    if (!host) return;
 
+    let disposed = false;
     const term = new Terminal({
       cursorBlink: true,
+      convertEol: true,
       fontFamily: '"IBM Plex Mono", monospace',
       fontSize: 14,
       theme: {
@@ -35,15 +47,13 @@ export function TerminalSession({ server }: Props) {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.loadAddon(new WebLinksAddon());
-    term.open(hostRef.current);
-    fit.fit();
-    termRef.current = term;
-    fitRef.current = fit;
+    term.open(host);
 
     const ws = new WebSocket(getWsUrl("/ws/ssh"));
     wsRef.current = ws;
 
-    ws.onopen = () => {
+    const connect = () => {
+      if (disposed || ws.readyState !== WebSocket.OPEN) return;
       const auth =
         server.authMethod === "password"
           ? { method: "password" as const, password: server.password ?? "" }
@@ -64,8 +74,18 @@ export function TerminalSession({ server }: Props) {
         term: "xterm-256color",
       };
       ws.send(JSON.stringify(payload));
-      term.writeln(`\x1b[38;2;212;162;76mOpenTerm\x1b[0m → ${server.username}@${server.host}:${server.port}`);
+      term.writeln(
+        `\x1b[38;2;212;162;76mOpenTerm\x1b[0m → ${server.username}@${server.host}:${server.port}`,
+      );
       term.writeln("Connecting…");
+    };
+
+    ws.onopen = () => {
+      // Fit after layout paints so xterm viewport exists.
+      requestAnimationFrame(() => {
+        safeFit(fit, host);
+        connect();
+      });
     };
 
     ws.onmessage = (event) => {
@@ -77,7 +97,7 @@ export function TerminalSession({ server }: Props) {
         };
         if (msg.type === "ready") {
           setStatus("live");
-          term.writeln("\x1b[32mConnected.\x1b[0m\r\n");
+          term.writeln("\x1b[32mConnected.\x1b[0m");
           return;
         }
         if (msg.type === "data" && msg.data) {
@@ -115,16 +135,18 @@ export function TerminalSession({ server }: Props) {
     });
 
     const onResize = () => {
-      fit.fit();
+      safeFit(fit, host);
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
       }
     };
     window.addEventListener("resize", onResize);
-    const ro = new ResizeObserver(onResize);
-    ro.observe(hostRef.current);
+    const ro = new ResizeObserver(() => onResize());
+    ro.observe(host);
+    requestAnimationFrame(() => safeFit(fit, host));
 
     return () => {
+      disposed = true;
       disposable.dispose();
       window.removeEventListener("resize", onResize);
       ro.disconnect();
@@ -133,19 +155,19 @@ export function TerminalSession({ server }: Props) {
       }
       ws.close();
       term.dispose();
-      termRef.current = null;
-      fitRef.current = null;
       wsRef.current = null;
     };
   }, [server]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, flex: 1 }}>
       <div className="session-bar">
         <span className="badge">
-          <span className={`status-dot ${status === "live" ? "live" : status === "error" ? "err" : ""}`} />
+          <span
+            className={`status-dot ${status === "live" ? "live" : status === "error" ? "err" : ""}`}
+          />
           {status === "connecting" && "Подключение…"}
-          {status === "live" && `${server.username}@${server.host}`}
+          {status === "live" && `${server.username}@${server.host}:${server.port}`}
           {status === "error" && (error ?? "Ошибка")}
           {status === "closed" && "Сессия закрыта"}
         </span>
