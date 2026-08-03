@@ -18,6 +18,9 @@ export type ServerProfile = {
   password?: string;
   privateKey?: string;
   passphrase?: string;
+  tags?: string[];
+  color?: string;
+  isFavorite?: boolean;
   createdAt: string;
   updatedAt: string;
 };

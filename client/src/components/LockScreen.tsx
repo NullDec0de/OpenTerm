@@ -31,7 +31,7 @@ export function LockScreen({ hasVault, onUnlock, onCreate, onImportFile, onImpor
         await onCreate(password);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
+      setError(err instanceof Error ? err.message : "Ошибка автокализации");
     } finally {
       setBusy(false);
     }
@@ -40,11 +40,16 @@ export function LockScreen({ hasVault, onUnlock, onCreate, onImportFile, onImpor
   return (
     <div className="lock-screen">
       <form className="lock-panel" onSubmit={submit}>
-        <div className="brand-mark">OpenTerm</div>
-        <h1>{hasVault ? "Разблокируйте хранилище" : "Создайте локальное хранилище"}</h1>
-        <p className="sub">
-          Пароли и ключи шифруются на этом устройстве. Сервер OpenTerm их не сохраняет — только
-          проксирует живую SSH/SFTP-сессию в памяти.
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+          <div className="brand-icon">O</div>
+          <div className="brand-title" style={{ fontSize: "1.6rem" }}>OpenTerm</div>
+        </div>
+
+        <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.3rem" }}>
+          {hasVault ? "Разблокируйте Vault" : "Создайте локальный Vault"}
+        </h2>
+        <p style={{ color: "var(--muted)", fontSize: "0.88rem", lineHeight: 1.45, margin: "0 0 1.5rem" }}>
+          Все пароли и ключи шифруются локально (AES-GCM). Сервер OpenTerm работает без базы данных и никогда не хранит секреты.
         </p>
 
         <div className="form-grid">
@@ -56,39 +61,43 @@ export function LockScreen({ hasVault, onUnlock, onCreate, onImportFile, onImpor
               autoComplete={hasVault ? "current-password" : "new-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
               required
             />
           </div>
+
           {!hasVault && (
             <div className="form-row">
-              <label htmlFor="confirm">Повтор пароля</label>
+              <label htmlFor="confirm">Подтвердите пароль</label>
               <input
                 id="confirm"
                 type="password"
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••••••"
                 required
               />
             </div>
           )}
-          {error && <p className="error-text">{error}</p>}
-          <div className="inline-actions">
-            <button className="btn btn-primary" type="submit" disabled={busy}>
-              {busy ? "…" : hasVault ? "Открыть" : "Создать vault"}
+
+          {error && <div className="toast toast-error">{error}</div>}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "0.5rem" }}>
+            <button className="btn btn-primary" type="submit" disabled={busy} style={{ justifyContent: "center" }}>
+              {busy ? "Обработка..." : hasVault ? "Открыть Vault" : "Создать зашифрованный Vault"}
             </button>
-            <button className="btn" type="button" onClick={onImportFile}>
-              Импорт файла
-            </button>
-            <button className="btn" type="button" onClick={onImportQr}>
-              Импорт QR
-            </button>
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button className="btn btn-ghost" type="button" onClick={onImportFile} style={{ flex: 1, justifyContent: "center" }}>
+                Импорт файла
+              </button>
+              <button className="btn btn-ghost" type="button" onClick={onImportQr} style={{ flex: 1, justifyContent: "center" }}>
+                Импорт QR
+              </button>
+            </div>
           </div>
         </div>
-        <p className="hint">
-          Синхронизация между устройствами — через зашифрованный файл или QR. Облачного бэкенда для
-          секретов нет.
-        </p>
       </form>
     </div>
   );
